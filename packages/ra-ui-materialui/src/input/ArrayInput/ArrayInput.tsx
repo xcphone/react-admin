@@ -91,7 +91,10 @@ export const ArrayInput = (inProps: ArrayInputProps) => {
     const { subscribe } = useFormContext();
     const { isSubmitted } = useFormState();
     const [{ error, hasBeenInteractedWith }, setArrayInputState] =
-        React.useState({
+        React.useState<{
+            error: any;
+            hasBeenInteractedWith: boolean;
+        }>({
             error: undefined,
             hasBeenInteractedWith: false,
         });
