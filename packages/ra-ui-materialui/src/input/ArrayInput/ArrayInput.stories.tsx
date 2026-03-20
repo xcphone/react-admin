@@ -832,9 +832,9 @@ const BookCreateConditionalValidation = () => {
         <Create>
             <SimpleForm mode="onChange">
                 <Alert severity="info" sx={{ mb: 2 }}>
-                    Reproduccion del bug 2: mostrar el ArrayInput no debe
-                    pintarlo invalido automaticamente. El error debe aparecer
-                    recien despues de interaccion real o submit invalido.
+                    Reproduction of bug 2: Displaying the ArrayInput should not
+                    automatically mark it as invalid. The error should appear
+                    only after actual interaction or an invalid submission.
                 </Alert>
                 <Button
                     onClick={() => setShowArrayInput(true)}
