@@ -4,7 +4,6 @@ import userEvent from '@testing-library/user-event';
 import {
     RecordContextProvider,
     ResourceContextProvider,
-    required,
     testDataProvider,
     useArrayInput,
 } from 'ra-core';
