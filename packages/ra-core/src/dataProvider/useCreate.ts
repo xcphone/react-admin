@@ -146,7 +146,7 @@ export const useCreate = <
                     mutationMode === 'pessimistic'
                         ? result?.id
                         : params.data?.id;
-                if (!id) {
+                if (id === undefined || id === null) {
                     throw new Error(
                         'Invalid dataProvider response for create: missing id'
                     );
