@@ -570,9 +570,11 @@ describe('<SimpleFormIterator />', () => {
             ).toEqual(['101', '102', '103']);
         });
 
+        const lastItem = screen
+            .queryAllByLabelText('Venue')[2]
+            .closest('li') as HTMLElement;
         const removeLastButton = getByLabelText(
-            // @ts-ignore
-            screen.queryAllByLabelText('Venue')[2].closest('li'),
+            lastItem,
             'ra.action.remove'
         ).closest('button') as HTMLButtonElement;
 
@@ -650,9 +652,11 @@ describe('<SimpleFormIterator />', () => {
             </Wrapper>
         );
 
+        const firstItem = screen
+            .queryAllByLabelText('Venue')[0]
+            .closest('li') as HTMLElement;
         const removeFirstButton = getByLabelText(
-            // @ts-ignore
-            screen.queryAllByLabelText('Venue')[0].closest('li'),
+            firstItem,
             'ra.action.remove'
         ).closest('button') as HTMLButtonElement;
 
