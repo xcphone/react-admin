@@ -175,16 +175,28 @@ export default (params?: LocalForageDataProviderParams): DataProvider => {
                 throw new Error('The dataProvider is not initialized.');
             }
 
+            assertRecordsExist(getResourceCollection(data, resource), [
+                params.id,
+            ]);
+            const response = await baseDataProvider.update<RecordType>(
+                resource,
+                params
+            );
             const resourceData = getResourceCollection(data, resource);
             const index = resourceData.findIndex(
                 (record: { id: any }) => record.id === params.id
             );
+
+            if (index === -1) {
+                return response;
+            }
+
             resourceData.splice(index, 1, {
                 ...resourceData[index],
                 ...params.data,
             });
             updateLocalForage(resource);
-            return baseDataProvider.update<RecordType>(resource, params);
+            return response;
         },
         updateMany: async (resource: string, params: UpdateManyParams<any>) => {
             checkResource(resource);
@@ -197,18 +209,28 @@ export default (params?: LocalForageDataProviderParams): DataProvider => {
             }
 
             const resourceData = getResourceCollection(data, resource);
+            assertRecordsExist(resourceData, params.ids);
+            const response = await baseDataProvider.updateMany(
+                resource,
+                params
+            );
 
             params.ids.forEach((id: Identifier) => {
                 const index = resourceData.findIndex(
                     (record: { id: Identifier }) => record.id === id
                 );
+
+                if (index === -1) {
+                    return;
+                }
+
                 resourceData.splice(index, 1, {
                     ...resourceData[index],
                     ...params.data,
                 });
             });
             updateLocalForage(resource);
-            return baseDataProvider.updateMany(resource, params);
+            return response;
         },
         create: async <RecordType extends Omit<RaRecord, 'id'> = any>(
             resource: string,
@@ -247,13 +269,25 @@ export default (params?: LocalForageDataProviderParams): DataProvider => {
             if (!data) {
                 throw new Error('The dataProvider is not initialized.');
             }
+            assertRecordsExist(getResourceCollection(data, resource), [
+                params.id,
+            ]);
+            const response = await baseDataProvider.delete<RecordType>(
+                resource,
+                params
+            );
             const resourceData = getResourceCollection(data, resource);
             const index = resourceData.findIndex(
                 (record: { id: any }) => record.id === params.id
             );
+
+            if (index === -1) {
+                return response;
+            }
+
             pullAt(resourceData, [index]);
             updateLocalForage(resource);
-            return baseDataProvider.delete<RecordType>(resource, params);
+            return response;
         },
         deleteMany: async (resource: string, params: DeleteManyParams<any>) => {
             checkResource(resource);
@@ -265,14 +299,22 @@ export default (params?: LocalForageDataProviderParams): DataProvider => {
                 throw new Error('The dataProvider is not initialized.');
             }
             const resourceData = getResourceCollection(data, resource);
-            const indexes = params.ids.map((id: any) => {
-                return resourceData.findIndex(
-                    (record: any) => record.id === id
-                );
-            });
+            assertRecordsExist(resourceData, params.ids);
+            const response = await baseDataProvider.deleteMany(
+                resource,
+                params
+            );
+            const indexes = params.ids
+                .map((id: any) => {
+                    return resourceData.findIndex(
+                        (record: any) => record.id === id
+                    );
+                })
+                .filter(index => index !== -1);
+
             pullAt(resourceData, indexes);
             updateLocalForage(resource);
-            return baseDataProvider.deleteMany(resource, params);
+            return response;
         },
     };
 };
@@ -311,6 +353,18 @@ const checkResource = resource => {
         // protection against prototype pollution
         throw new Error(`Invalid resource key: ${resource}`);
     }
+};
+
+const assertRecordsExist = (resourceData, ids) => {
+    ids.forEach(id => {
+        if (
+            resourceData.findIndex(
+                (record: { id: Identifier }) => record.id === id
+            ) === -1
+        ) {
+            throw new Error(`No item with identifier ${id}`);
+        }
+    });
 };
 
 export interface LocalForageDataProviderParams {

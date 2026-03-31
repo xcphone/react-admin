@@ -99,33 +99,75 @@ export default (params?: LocalStorageDataProviderParams): DataProvider => {
         // update methods need to persist changes in localStorage
         update: <RecordType extends RaRecord = any>(resource, params) => {
             checkResource(resource);
-            updateLocalStorage(() => {
-                const resourceData = getResourceCollection(data, resource);
-                const index = resourceData.findIndex(
-                    record => record.id == params.id
-                );
-                resourceData.splice(index, 1, {
-                    ...resourceData[index],
-                    ...params.data,
+            try {
+                assertRecordsExist(getResourceCollection(data, resource), [
+                    params.id,
+                ]);
+            } catch (error) {
+                return Promise.reject(error);
+            }
+            return baseDataProvider
+                .update<RecordType>(resource, params)
+                .then(response => {
+                    updateLocalStorage(() => {
+                        const resourceData = getResourceCollection(
+                            data,
+                            resource
+                        );
+                        const index = resourceData.findIndex(
+                            record => record.id == params.id
+                        );
+
+                        if (index === -1) {
+                            return;
+                        }
+
+                        resourceData.splice(index, 1, {
+                            ...resourceData[index],
+                            ...params.data,
+                        });
+                    });
+
+                    return response;
                 });
-            });
-            return baseDataProvider.update<RecordType>(resource, params);
         },
         updateMany: (resource, params) => {
             checkResource(resource);
-            updateLocalStorage(() => {
-                const resourceData = getResourceCollection(data, resource);
-                params.ids.forEach(id => {
-                    const index = resourceData.findIndex(
-                        record => record.id == id
-                    );
-                    resourceData.splice(index, 1, {
-                        ...resourceData[index],
-                        ...params.data,
+            try {
+                assertRecordsExist(
+                    getResourceCollection(data, resource),
+                    params.ids
+                );
+            } catch (error) {
+                return Promise.reject(error);
+            }
+
+            return baseDataProvider
+                .updateMany(resource, params)
+                .then(response => {
+                    updateLocalStorage(() => {
+                        const resourceData = getResourceCollection(
+                            data,
+                            resource
+                        );
+                        params.ids.forEach(id => {
+                            const index = resourceData.findIndex(
+                                record => record.id == id
+                            );
+
+                            if (index === -1) {
+                                return;
+                            }
+
+                            resourceData.splice(index, 1, {
+                                ...resourceData[index],
+                                ...params.data,
+                            });
+                        });
                     });
+
+                    return response;
                 });
-            });
-            return baseDataProvider.updateMany(resource, params);
         },
         create: <RecordType extends Omit<RaRecord, 'id'> = any>(
             resource,
@@ -148,25 +190,67 @@ export default (params?: LocalStorageDataProviderParams): DataProvider => {
         },
         delete: <RecordType extends RaRecord = any>(resource, params) => {
             checkResource(resource);
-            updateLocalStorage(() => {
-                const resourceData = getResourceCollection(data, resource);
-                const index = resourceData.findIndex(
-                    record => record.id == params.id
-                );
-                pullAt(resourceData, [index]);
-            });
-            return baseDataProvider.delete<RecordType>(resource, params);
+            try {
+                assertRecordsExist(getResourceCollection(data, resource), [
+                    params.id,
+                ]);
+            } catch (error) {
+                return Promise.reject(error);
+            }
+            return baseDataProvider
+                .delete<RecordType>(resource, params)
+                .then(response => {
+                    updateLocalStorage(() => {
+                        const resourceData = getResourceCollection(
+                            data,
+                            resource
+                        );
+                        const index = resourceData.findIndex(
+                            record => record.id == params.id
+                        );
+
+                        if (index === -1) {
+                            return;
+                        }
+
+                        pullAt(resourceData, [index]);
+                    });
+
+                    return response;
+                });
         },
         deleteMany: (resource, params) => {
             checkResource(resource);
-            updateLocalStorage(() => {
-                const resourceData = getResourceCollection(data, resource);
-                const indexes = params.ids.map(id =>
-                    resourceData.findIndex(record => record.id == id)
+            try {
+                assertRecordsExist(
+                    getResourceCollection(data, resource),
+                    params.ids
                 );
-                pullAt(resourceData, indexes);
-            });
-            return baseDataProvider.deleteMany(resource, params);
+            } catch (error) {
+                return Promise.reject(error);
+            }
+
+            return baseDataProvider
+                .deleteMany(resource, params)
+                .then(response => {
+                    updateLocalStorage(() => {
+                        const resourceData = getResourceCollection(
+                            data,
+                            resource
+                        );
+                        const indexes = params.ids
+                            .map(id =>
+                                resourceData.findIndex(
+                                    record => record.id == id
+                                )
+                            )
+                            .filter(index => index !== -1);
+
+                        pullAt(resourceData, indexes);
+                    });
+
+                    return response;
+                });
         },
     };
 };
@@ -202,6 +286,14 @@ const checkResource = resource => {
         // protection against prototype pollution
         throw new Error(`Invalid resource key: ${resource}`);
     }
+};
+
+const assertRecordsExist = (resourceData, ids) => {
+    ids.forEach(id => {
+        if (resourceData.findIndex(record => record.id == id) === -1) {
+            throw new Error(`No item with identifier ${id}`);
+        }
+    });
 };
 
 export interface LocalStorageDataProviderParams {
