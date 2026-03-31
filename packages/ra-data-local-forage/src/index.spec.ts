@@ -51,6 +51,20 @@ describe('ra-data-local-forage', () => {
         ).rejects.toThrow('Invalid resource key: __proto__');
     });
 
+    it('supports resource keys inherited from Object.prototype', async () => {
+        const dataProvider = localForageDataProvider();
+
+        const response = await dataProvider.create('constructor', {
+            data: { title: 'Hello world' },
+        } as any);
+
+        expect(response.data.title).toEqual('Hello world');
+        expect(localforage.setItem).toHaveBeenCalledWith(
+            'ra-data-local-forage-constructor',
+            [expect.objectContaining({ title: 'Hello world' })]
+        );
+    });
+
     it('does not corrupt local data when update targets an unknown id', async () => {
         (localforage.keys as jest.Mock).mockResolvedValue([
             'ra-data-local-forage-posts',

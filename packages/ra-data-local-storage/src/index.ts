@@ -110,10 +110,7 @@ export default (params?: LocalStorageDataProviderParams): DataProvider => {
                 .update<RecordType>(resource, params)
                 .then(response => {
                     updateLocalStorage(() => {
-                        const resourceData = getResourceCollection(
-                            data,
-                            resource
-                        );
+                        const resourceData = getResourceCollection(data, resource);
                         const index = resourceData.findIndex(
                             record => record.id == params.id
                         );
@@ -142,32 +139,27 @@ export default (params?: LocalStorageDataProviderParams): DataProvider => {
                 return Promise.reject(error);
             }
 
-            return baseDataProvider
-                .updateMany(resource, params)
-                .then(response => {
-                    updateLocalStorage(() => {
-                        const resourceData = getResourceCollection(
-                            data,
-                            resource
+            return baseDataProvider.updateMany(resource, params).then(response => {
+                updateLocalStorage(() => {
+                    const resourceData = getResourceCollection(data, resource);
+                    params.ids.forEach(id => {
+                        const index = resourceData.findIndex(
+                            record => record.id == id
                         );
-                        params.ids.forEach(id => {
-                            const index = resourceData.findIndex(
-                                record => record.id == id
-                            );
 
-                            if (index === -1) {
-                                return;
-                            }
+                        if (index === -1) {
+                            return;
+                        }
 
-                            resourceData.splice(index, 1, {
-                                ...resourceData[index],
-                                ...params.data,
-                            });
+                        resourceData.splice(index, 1, {
+                            ...resourceData[index],
+                            ...params.data,
                         });
                     });
-
-                    return response;
                 });
+
+                return response;
+            });
         },
         create: <RecordType extends Omit<RaRecord, 'id'> = any>(
             resource,
@@ -201,10 +193,7 @@ export default (params?: LocalStorageDataProviderParams): DataProvider => {
                 .delete<RecordType>(resource, params)
                 .then(response => {
                     updateLocalStorage(() => {
-                        const resourceData = getResourceCollection(
-                            data,
-                            resource
-                        );
+                        const resourceData = getResourceCollection(data, resource);
                         const index = resourceData.findIndex(
                             record => record.id == params.id
                         );
@@ -230,60 +219,44 @@ export default (params?: LocalStorageDataProviderParams): DataProvider => {
                 return Promise.reject(error);
             }
 
-            return baseDataProvider
-                .deleteMany(resource, params)
-                .then(response => {
-                    updateLocalStorage(() => {
-                        const resourceData = getResourceCollection(
-                            data,
-                            resource
-                        );
-                        const indexes = params.ids
-                            .map(id =>
-                                resourceData.findIndex(
-                                    record => record.id == id
-                                )
-                            )
-                            .filter(index => index !== -1);
+            return baseDataProvider.deleteMany(resource, params).then(response => {
+                updateLocalStorage(() => {
+                    const resourceData = getResourceCollection(data, resource);
+                    const indexes = params.ids
+                        .map(id =>
+                            resourceData.findIndex(record => record.id == id)
+                        )
+                        .filter(index => index !== -1);
 
-                        pullAt(resourceData, indexes);
-                    });
-
-                    return response;
+                    pullAt(resourceData, indexes);
                 });
+
+                return response;
+            });
         },
     };
 };
 
 const getResourceCollection = (data, resource) => {
-    const resourceData = data[resource];
-
-    if (!resourceData) {
+    if (!Object.prototype.hasOwnProperty.call(data, resource)) {
         throw new Error(`Unknown resource key: ${resource}`);
     }
 
-    return resourceData;
+    return data[resource];
 };
 
 const getOrCreateResourceCollection = (data, resource) => {
-    const resourceData = data[resource];
-    if (resourceData) {
-        return resourceData;
+    if (!Object.prototype.hasOwnProperty.call(data, resource)) {
+        data[resource] = [];
     }
-
-    Object.defineProperty(data, resource, {
-        value: [],
-        writable: true,
-        enumerable: true,
-        configurable: true,
-    });
 
     return data[resource];
 };
 
 const checkResource = resource => {
-    if (['__proto__', 'constructor', 'prototype'].includes(resource)) {
-        // protection against prototype pollution
+    // Reject "__proto__" so dynamic writes like data[resource] = value don't
+    // mutate Object.prototype instead of creating a normal resource collection.
+    if (resource === '__proto__') {
         throw new Error(`Invalid resource key: ${resource}`);
     }
 };

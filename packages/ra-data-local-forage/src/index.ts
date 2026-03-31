@@ -175,9 +175,7 @@ export default (params?: LocalForageDataProviderParams): DataProvider => {
                 throw new Error('The dataProvider is not initialized.');
             }
 
-            assertRecordsExist(getResourceCollection(data, resource), [
-                params.id,
-            ]);
+            assertRecordsExist(getResourceCollection(data, resource), [params.id]);
             const response = await baseDataProvider.update<RecordType>(
                 resource,
                 params
@@ -210,10 +208,7 @@ export default (params?: LocalForageDataProviderParams): DataProvider => {
 
             const resourceData = getResourceCollection(data, resource);
             assertRecordsExist(resourceData, params.ids);
-            const response = await baseDataProvider.updateMany(
-                resource,
-                params
-            );
+            const response = await baseDataProvider.updateMany(resource, params);
 
             params.ids.forEach((id: Identifier) => {
                 const index = resourceData.findIndex(
@@ -269,9 +264,7 @@ export default (params?: LocalForageDataProviderParams): DataProvider => {
             if (!data) {
                 throw new Error('The dataProvider is not initialized.');
             }
-            assertRecordsExist(getResourceCollection(data, resource), [
-                params.id,
-            ]);
+            assertRecordsExist(getResourceCollection(data, resource), [params.id]);
             const response = await baseDataProvider.delete<RecordType>(
                 resource,
                 params
@@ -300,10 +293,7 @@ export default (params?: LocalForageDataProviderParams): DataProvider => {
             }
             const resourceData = getResourceCollection(data, resource);
             assertRecordsExist(resourceData, params.ids);
-            const response = await baseDataProvider.deleteMany(
-                resource,
-                params
-            );
+            const response = await baseDataProvider.deleteMany(resource, params);
             const indexes = params.ids
                 .map((id: any) => {
                     return resourceData.findIndex(
@@ -320,37 +310,28 @@ export default (params?: LocalForageDataProviderParams): DataProvider => {
 };
 
 const getResourceCollection = (data: Record<string, any>, resource: string) => {
-    const resourceData = data[resource];
-
-    if (!resourceData) {
+    if (!Object.prototype.hasOwnProperty.call(data, resource)) {
         throw new Error(`Unknown resource key: ${resource}`);
     }
 
-    return resourceData;
+    return data[resource];
 };
 
 const getOrCreateResourceCollection = (
     data: Record<string, any>,
     resource: string
 ) => {
-    const resourceData = data[resource];
-    if (resourceData) {
-        return resourceData;
+    if (!Object.prototype.hasOwnProperty.call(data, resource)) {
+        data[resource] = [];
     }
-
-    Object.defineProperty(data, resource, {
-        value: [],
-        writable: true,
-        enumerable: true,
-        configurable: true,
-    });
 
     return data[resource];
 };
 
 const checkResource = resource => {
-    if (['__proto__', 'constructor', 'prototype'].includes(resource)) {
-        // protection against prototype pollution
+    // Reject "__proto__" so dynamic writes like data[resource] = value don't
+    // mutate Object.prototype instead of creating a normal resource collection.
+    if (resource === '__proto__') {
         throw new Error(`Invalid resource key: ${resource}`);
     }
 };
