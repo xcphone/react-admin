@@ -175,7 +175,9 @@ export default (params?: LocalForageDataProviderParams): DataProvider => {
                 throw new Error('The dataProvider is not initialized.');
             }
 
-            assertRecordsExist(getResourceCollection(data, resource), [params.id]);
+            assertRecordsExist(getResourceCollection(data, resource), [
+                params.id,
+            ]);
             const response = await baseDataProvider.update<RecordType>(
                 resource,
                 params
@@ -208,7 +210,10 @@ export default (params?: LocalForageDataProviderParams): DataProvider => {
 
             const resourceData = getResourceCollection(data, resource);
             assertRecordsExist(resourceData, params.ids);
-            const response = await baseDataProvider.updateMany(resource, params);
+            const response = await baseDataProvider.updateMany(
+                resource,
+                params
+            );
 
             params.ids.forEach((id: Identifier) => {
                 const index = resourceData.findIndex(
@@ -264,7 +269,9 @@ export default (params?: LocalForageDataProviderParams): DataProvider => {
             if (!data) {
                 throw new Error('The dataProvider is not initialized.');
             }
-            assertRecordsExist(getResourceCollection(data, resource), [params.id]);
+            assertRecordsExist(getResourceCollection(data, resource), [
+                params.id,
+            ]);
             const response = await baseDataProvider.delete<RecordType>(
                 resource,
                 params
@@ -293,7 +300,10 @@ export default (params?: LocalForageDataProviderParams): DataProvider => {
             }
             const resourceData = getResourceCollection(data, resource);
             assertRecordsExist(resourceData, params.ids);
-            const response = await baseDataProvider.deleteMany(resource, params);
+            const response = await baseDataProvider.deleteMany(
+                resource,
+                params
+            );
             const indexes = params.ids
                 .map((id: any) => {
                     return resourceData.findIndex(

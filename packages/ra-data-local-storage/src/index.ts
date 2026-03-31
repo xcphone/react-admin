@@ -110,7 +110,10 @@ export default (params?: LocalStorageDataProviderParams): DataProvider => {
                 .update<RecordType>(resource, params)
                 .then(response => {
                     updateLocalStorage(() => {
-                        const resourceData = getResourceCollection(data, resource);
+                        const resourceData = getResourceCollection(
+                            data,
+                            resource
+                        );
                         const index = resourceData.findIndex(
                             record => record.id == params.id
                         );
@@ -139,27 +142,32 @@ export default (params?: LocalStorageDataProviderParams): DataProvider => {
                 return Promise.reject(error);
             }
 
-            return baseDataProvider.updateMany(resource, params).then(response => {
-                updateLocalStorage(() => {
-                    const resourceData = getResourceCollection(data, resource);
-                    params.ids.forEach(id => {
-                        const index = resourceData.findIndex(
-                            record => record.id == id
+            return baseDataProvider
+                .updateMany(resource, params)
+                .then(response => {
+                    updateLocalStorage(() => {
+                        const resourceData = getResourceCollection(
+                            data,
+                            resource
                         );
+                        params.ids.forEach(id => {
+                            const index = resourceData.findIndex(
+                                record => record.id == id
+                            );
 
-                        if (index === -1) {
-                            return;
-                        }
+                            if (index === -1) {
+                                return;
+                            }
 
-                        resourceData.splice(index, 1, {
-                            ...resourceData[index],
-                            ...params.data,
+                            resourceData.splice(index, 1, {
+                                ...resourceData[index],
+                                ...params.data,
+                            });
                         });
                     });
-                });
 
-                return response;
-            });
+                    return response;
+                });
         },
         create: <RecordType extends Omit<RaRecord, 'id'> = any>(
             resource,
@@ -193,7 +201,10 @@ export default (params?: LocalStorageDataProviderParams): DataProvider => {
                 .delete<RecordType>(resource, params)
                 .then(response => {
                     updateLocalStorage(() => {
-                        const resourceData = getResourceCollection(data, resource);
+                        const resourceData = getResourceCollection(
+                            data,
+                            resource
+                        );
                         const index = resourceData.findIndex(
                             record => record.id == params.id
                         );
@@ -219,20 +230,27 @@ export default (params?: LocalStorageDataProviderParams): DataProvider => {
                 return Promise.reject(error);
             }
 
-            return baseDataProvider.deleteMany(resource, params).then(response => {
-                updateLocalStorage(() => {
-                    const resourceData = getResourceCollection(data, resource);
-                    const indexes = params.ids
-                        .map(id =>
-                            resourceData.findIndex(record => record.id == id)
-                        )
-                        .filter(index => index !== -1);
+            return baseDataProvider
+                .deleteMany(resource, params)
+                .then(response => {
+                    updateLocalStorage(() => {
+                        const resourceData = getResourceCollection(
+                            data,
+                            resource
+                        );
+                        const indexes = params.ids
+                            .map(id =>
+                                resourceData.findIndex(
+                                    record => record.id == id
+                                )
+                            )
+                            .filter(index => index !== -1);
 
-                    pullAt(resourceData, indexes);
+                        pullAt(resourceData, indexes);
+                    });
+
+                    return response;
                 });
-
-                return response;
-            });
         },
     };
 };
