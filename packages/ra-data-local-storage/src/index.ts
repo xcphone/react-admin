@@ -104,10 +104,10 @@ export default (params?: LocalStorageDataProviderParams): DataProvider => {
                 const index = resourceData.findIndex(
                     record => record.id == params.id
                 );
-                resourceData[index] = {
+                resourceData.splice(index, 1, {
                     ...resourceData[index],
                     ...params.data,
-                };
+                });
             });
             return baseDataProvider.update<RecordType>(resource, params);
         },
@@ -119,10 +119,10 @@ export default (params?: LocalStorageDataProviderParams): DataProvider => {
                     const index = resourceData.findIndex(
                         record => record.id == id
                     );
-                    resourceData[index] = {
+                    resourceData.splice(index, 1, {
                         ...resourceData[index],
                         ...params.data,
-                    };
+                    });
                 });
             });
             return baseDataProvider.updateMany(resource, params);

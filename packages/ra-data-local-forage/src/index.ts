@@ -179,10 +179,10 @@ export default (params?: LocalForageDataProviderParams): DataProvider => {
             const index = resourceData.findIndex(
                 (record: { id: any }) => record.id === params.id
             );
-            resourceData[index] = {
+            resourceData.splice(index, 1, {
                 ...resourceData[index],
                 ...params.data,
-            };
+            });
             updateLocalForage(resource);
             return baseDataProvider.update<RecordType>(resource, params);
         },
@@ -202,10 +202,10 @@ export default (params?: LocalForageDataProviderParams): DataProvider => {
                 const index = resourceData.findIndex(
                     (record: { id: Identifier }) => record.id === id
                 );
-                resourceData[index] = {
+                resourceData.splice(index, 1, {
                     ...resourceData[index],
                     ...params.data,
-                };
+                });
             });
             updateLocalForage(resource);
             return baseDataProvider.updateMany(resource, params);
