@@ -175,11 +175,12 @@ export default (params?: LocalForageDataProviderParams): DataProvider => {
                 throw new Error('The dataProvider is not initialized.');
             }
 
-            const index = data[resource].findIndex(
+            const resourceData = getResourceCollection(data, resource);
+            const index = resourceData.findIndex(
                 (record: { id: any }) => record.id === params.id
             );
-            data[resource][index] = {
-                ...data[resource][index],
+            resourceData[index] = {
+                ...resourceData[index],
                 ...params.data,
             };
             updateLocalForage(resource);
@@ -191,16 +192,18 @@ export default (params?: LocalForageDataProviderParams): DataProvider => {
             if (!baseDataProvider) {
                 throw new Error('The dataProvider is not initialized.');
             }
+            if (!data) {
+                throw new Error('The dataProvider is not initialized.');
+            }
+
+            const resourceData = getResourceCollection(data, resource);
 
             params.ids.forEach((id: Identifier) => {
-                if (!data) {
-                    throw new Error('The dataProvider is not initialized.');
-                }
-                const index = data[resource].findIndex(
+                const index = resourceData.findIndex(
                     (record: { id: Identifier }) => record.id === id
                 );
-                data[resource][index] = {
-                    ...data[resource][index],
+                resourceData[index] = {
+                    ...resourceData[index],
                     ...params.data,
                 };
             });
@@ -223,10 +226,11 @@ export default (params?: LocalForageDataProviderParams): DataProvider => {
                     if (!data) {
                         throw new Error('The dataProvider is not initialized.');
                     }
-                    if (!data.hasOwnProperty(resource)) {
-                        data[resource] = [];
-                    }
-                    data[resource].push(response.data);
+                    const resourceData = getOrCreateResourceCollection(
+                        data,
+                        resource
+                    );
+                    resourceData.push(response.data);
                     updateLocalForage(resource);
                     return response;
                 });
@@ -243,10 +247,11 @@ export default (params?: LocalForageDataProviderParams): DataProvider => {
             if (!data) {
                 throw new Error('The dataProvider is not initialized.');
             }
-            const index = data[resource].findIndex(
+            const resourceData = getResourceCollection(data, resource);
+            const index = resourceData.findIndex(
                 (record: { id: any }) => record.id === params.id
             );
-            pullAt(data[resource], [index]);
+            pullAt(resourceData, [index]);
             updateLocalForage(resource);
             return baseDataProvider.delete<RecordType>(resource, params);
         },
@@ -259,19 +264,46 @@ export default (params?: LocalForageDataProviderParams): DataProvider => {
             if (!data) {
                 throw new Error('The dataProvider is not initialized.');
             }
+            const resourceData = getResourceCollection(data, resource);
             const indexes = params.ids.map((id: any) => {
-                if (!data) {
-                    throw new Error('The dataProvider is not initialized.');
-                }
-                return data[resource].findIndex(
+                return resourceData.findIndex(
                     (record: any) => record.id === id
                 );
             });
-            pullAt(data[resource], indexes);
+            pullAt(resourceData, indexes);
             updateLocalForage(resource);
             return baseDataProvider.deleteMany(resource, params);
         },
     };
+};
+
+const getResourceCollection = (data: Record<string, any>, resource: string) => {
+    const resourceData = data[resource];
+
+    if (!resourceData) {
+        throw new Error(`Unknown resource key: ${resource}`);
+    }
+
+    return resourceData;
+};
+
+const getOrCreateResourceCollection = (
+    data: Record<string, any>,
+    resource: string
+) => {
+    const resourceData = data[resource];
+    if (resourceData) {
+        return resourceData;
+    }
+
+    Object.defineProperty(data, resource, {
+        value: [],
+        writable: true,
+        enumerable: true,
+        configurable: true,
+    });
+
+    return data[resource];
 };
 
 const checkResource = resource => {

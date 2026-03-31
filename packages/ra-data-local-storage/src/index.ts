@@ -100,11 +100,12 @@ export default (params?: LocalStorageDataProviderParams): DataProvider => {
         update: <RecordType extends RaRecord = any>(resource, params) => {
             checkResource(resource);
             updateLocalStorage(() => {
-                const index = data[resource]?.findIndex(
+                const resourceData = getResourceCollection(data, resource);
+                const index = resourceData.findIndex(
                     record => record.id == params.id
                 );
-                data[resource][index] = {
-                    ...data[resource][index],
+                resourceData[index] = {
+                    ...resourceData[index],
                     ...params.data,
                 };
             });
@@ -113,12 +114,13 @@ export default (params?: LocalStorageDataProviderParams): DataProvider => {
         updateMany: (resource, params) => {
             checkResource(resource);
             updateLocalStorage(() => {
+                const resourceData = getResourceCollection(data, resource);
                 params.ids.forEach(id => {
-                    const index = data[resource]?.findIndex(
+                    const index = resourceData.findIndex(
                         record => record.id == id
                     );
-                    data[resource][index] = {
-                        ...data[resource][index],
+                    resourceData[index] = {
+                        ...resourceData[index],
                         ...params.data,
                     };
                 });
@@ -135,10 +137,11 @@ export default (params?: LocalStorageDataProviderParams): DataProvider => {
                 .create<RecordType>(resource, params)
                 .then(response => {
                     updateLocalStorage(() => {
-                        if (!data.hasOwnProperty(resource)) {
-                            data[resource] = [];
-                        }
-                        data[resource].push(response.data);
+                        const resourceData = getOrCreateResourceCollection(
+                            data,
+                            resource
+                        );
+                        resourceData.push(response.data);
                     });
                     return response;
                 });
@@ -146,24 +149,52 @@ export default (params?: LocalStorageDataProviderParams): DataProvider => {
         delete: <RecordType extends RaRecord = any>(resource, params) => {
             checkResource(resource);
             updateLocalStorage(() => {
-                const index = data[resource]?.findIndex(
+                const resourceData = getResourceCollection(data, resource);
+                const index = resourceData.findIndex(
                     record => record.id == params.id
                 );
-                pullAt(data[resource], [index]);
+                pullAt(resourceData, [index]);
             });
             return baseDataProvider.delete<RecordType>(resource, params);
         },
         deleteMany: (resource, params) => {
             checkResource(resource);
             updateLocalStorage(() => {
+                const resourceData = getResourceCollection(data, resource);
                 const indexes = params.ids.map(id =>
-                    data[resource]?.findIndex(record => record.id == id)
+                    resourceData.findIndex(record => record.id == id)
                 );
-                pullAt(data[resource], indexes);
+                pullAt(resourceData, indexes);
             });
             return baseDataProvider.deleteMany(resource, params);
         },
     };
+};
+
+const getResourceCollection = (data, resource) => {
+    const resourceData = data[resource];
+
+    if (!resourceData) {
+        throw new Error(`Unknown resource key: ${resource}`);
+    }
+
+    return resourceData;
+};
+
+const getOrCreateResourceCollection = (data, resource) => {
+    const resourceData = data[resource];
+    if (resourceData) {
+        return resourceData;
+    }
+
+    Object.defineProperty(data, resource, {
+        value: [],
+        writable: true,
+        enumerable: true,
+        configurable: true,
+    });
+
+    return data[resource];
 };
 
 const checkResource = resource => {
