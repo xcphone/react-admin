@@ -180,6 +180,7 @@ export default defineConfig({
                     items: [
                         'fields',
                         'fieldsforrelationships',
+                        'arrayfieldbase',
                         'referencearrayfieldbase',
                         'referencefieldbase',
                         'referencemanycountbase',
