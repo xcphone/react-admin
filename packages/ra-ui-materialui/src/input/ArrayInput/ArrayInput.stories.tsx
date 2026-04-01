@@ -29,7 +29,10 @@ import { ReferenceField, TextField, TranslatableFields } from '../../field';
 import { Labeled } from '../../Labeled';
 import { useFormContext, useWatch } from 'react-hook-form';
 
-export default { title: 'ra-ui-materialui/input/ArrayInput' };
+export default {
+    title: 'ra-ui-materialui/input/ArrayInput',
+    excludeStories: ['ConditionalArrayInputValidationContent'],
+};
 
 const dataProvider = {
     getOne: () =>
