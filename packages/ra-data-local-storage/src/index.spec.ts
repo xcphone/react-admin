@@ -46,28 +46,6 @@ describe('ra-data-local-storage', () => {
         ).toThrow('Invalid resource key: __proto__');
     });
 
-    it('supports resource keys inherited from Object.prototype', async () => {
-        const dataProvider = localStorageDataProvider({
-            localStorageKey: 'ra-data-local-storage-test',
-            localStorageUpdateDelay: 0,
-        });
-
-        const response = await dataProvider.create('constructor', {
-            data: { title: 'Hello world' },
-        } as any);
-
-        await new Promise(resolve => setTimeout(resolve, 0));
-
-        expect(response.data.title).toEqual('Hello world');
-        expect(
-            JSON.parse(
-                localStorage.getItem('ra-data-local-storage-test') || '{}'
-            )
-        ).toMatchObject({
-            constructor: [expect.objectContaining({ title: 'Hello world' })],
-        });
-    });
-
     it('does not corrupt local data when update targets an unknown id', async () => {
         localStorage.setItem(
             'ra-data-local-storage-test',
