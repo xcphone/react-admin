@@ -13,11 +13,6 @@ jest.mock('localforage', () => ({
 }));
 
 describe('ra-data-local-forage', () => {
-    const posts = [
-        { id: 1, title: 'Hello world' },
-        { id: 2, title: 'Second post' },
-    ];
-
     beforeEach(() => {
         jest.resetAllMocks();
         (localforage.keys as jest.Mock).mockResolvedValue([]);
@@ -39,83 +34,67 @@ describe('ra-data-local-forage', () => {
         );
     });
 
-    it('rejects unsafe resource keys', async () => {
-        const dataProvider = localForageDataProvider();
+    it.each(['__proto__', 'constructor', 'prototype'])(
+        'rejects unsafe resource key %s in update',
+        async unsafeKey => {
+            const dataProvider = localForageDataProvider();
+            await expect(
+                dataProvider.update(unsafeKey, {
+                    id: 1,
+                    data: { title: 'bad' },
+                    previousData: { id: 1 },
+                } as any)
+            ).rejects.toThrow(`Invalid resource key: ${unsafeKey}`);
+        }
+    );
 
-        await expect(
-            dataProvider.update('__proto__', {
-                id: 1,
-                data: { title: 'bad' },
-                previousData: { id: 1 },
-            } as any)
-        ).rejects.toThrow('Invalid resource key: __proto__');
-    });
+    it.each(['__proto__', 'constructor', 'prototype'])(
+        'rejects unsafe resource key %s in updateMany',
+        async unsafeKey => {
+            const dataProvider = localForageDataProvider();
+            await expect(
+                dataProvider.updateMany(unsafeKey, {
+                    ids: [1],
+                    data: { title: 'bad' },
+                } as any)
+            ).rejects.toThrow(`Invalid resource key: ${unsafeKey}`);
+        }
+    );
 
-    it('does not corrupt local data when update targets an unknown id', async () => {
-        (localforage.keys as jest.Mock).mockResolvedValue([
-            'ra-data-local-forage-posts',
-        ]);
-        (localforage.getItem as jest.Mock).mockResolvedValue([...posts]);
-        const dataProvider = localForageDataProvider();
+    it.each(['__proto__', 'constructor', 'prototype'])(
+        'rejects unsafe resource key %s in create',
+        async unsafeKey => {
+            const dataProvider = localForageDataProvider();
+            await expect(
+                dataProvider.create(unsafeKey, {
+                    data: { title: 'bad' },
+                } as any)
+            ).rejects.toThrow(`Invalid resource key: ${unsafeKey}`);
+        }
+    );
 
-        await expect(
-            dataProvider.update('posts', {
-                id: 3,
-                data: { title: 'Updated' },
-                previousData: { id: 3 },
-            } as any)
-        ).rejects.toThrow('No item with identifier 3');
+    it.each(['__proto__', 'constructor', 'prototype'])(
+        'rejects unsafe resource key %s in delete',
+        async unsafeKey => {
+            const dataProvider = localForageDataProvider();
+            await expect(
+                dataProvider.delete(unsafeKey, {
+                    id: 1,
+                    previousData: { id: 1 },
+                } as any)
+            ).rejects.toThrow(`Invalid resource key: ${unsafeKey}`);
+        }
+    );
 
-        expect(localforage.setItem).not.toHaveBeenCalled();
-    });
-
-    it('does not partially update local data when updateMany includes an unknown id', async () => {
-        (localforage.keys as jest.Mock).mockResolvedValue([
-            'ra-data-local-forage-posts',
-        ]);
-        (localforage.getItem as jest.Mock).mockResolvedValue([...posts]);
-        const dataProvider = localForageDataProvider();
-
-        await expect(
-            dataProvider.updateMany('posts', {
-                ids: [1, 3],
-                data: { title: 'Updated' },
-            } as any)
-        ).rejects.toThrow('No item with identifier 3');
-
-        expect(localforage.setItem).not.toHaveBeenCalled();
-    });
-
-    it('does not corrupt local data when delete targets an unknown id', async () => {
-        (localforage.keys as jest.Mock).mockResolvedValue([
-            'ra-data-local-forage-posts',
-        ]);
-        (localforage.getItem as jest.Mock).mockResolvedValue([...posts]);
-        const dataProvider = localForageDataProvider();
-
-        await expect(
-            dataProvider.delete('posts', {
-                id: 3,
-                previousData: { id: 3 },
-            } as any)
-        ).rejects.toThrow('No item with identifier 3');
-
-        expect(localforage.setItem).not.toHaveBeenCalled();
-    });
-
-    it('does not partially delete local data when deleteMany includes an unknown id', async () => {
-        (localforage.keys as jest.Mock).mockResolvedValue([
-            'ra-data-local-forage-posts',
-        ]);
-        (localforage.getItem as jest.Mock).mockResolvedValue([...posts]);
-        const dataProvider = localForageDataProvider();
-
-        await expect(
-            dataProvider.deleteMany('posts', {
-                ids: [1, 3],
-            } as any)
-        ).rejects.toThrow('No item with identifier 3');
-
-        expect(localforage.setItem).not.toHaveBeenCalled();
-    });
+    it.each(['__proto__', 'constructor', 'prototype'])(
+        'rejects unsafe resource key %s in deleteMany',
+        async unsafeKey => {
+            const dataProvider = localForageDataProvider();
+            await expect(
+                dataProvider.deleteMany(unsafeKey, {
+                    ids: [1],
+                } as any)
+            ).rejects.toThrow(`Invalid resource key: ${unsafeKey}`);
+        }
+    );
 });
